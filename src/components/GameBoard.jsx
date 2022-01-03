@@ -61,17 +61,18 @@ export default class GameBoard extends Component {
         } else {
           newHead = this.generateFood(board, newHead)
 
-          const newTail = this.moveTail()
+          const tailAndPath = this.moveTail()
 
           board[newHead] = "S"
 
           this.setState({
             board: board,
             head: newHead,
-            tail: newTail,
+            tail: tailAndPath.tail,
+            snakePath: tailAndPath.snakePath
           })
 
-          setTimeout(loop, 10)
+          setTimeout(loop, 25)
         }
       }
     }
@@ -153,7 +154,8 @@ export default class GameBoard extends Component {
 
     const leftGridCase = tail % 40 === 0 ? tail + 39 : tail - 1
 
-    switch (this.removeFromSnakePath()) {
+    const directionAndPath = this.removeFromSnakePath()
+    switch (directionAndPath.tailDirection) {
       case "North":
         tail = topGridCase
         break
@@ -170,24 +172,18 @@ export default class GameBoard extends Component {
         break
     }
 
-    return tail
+    return {tail: tail, snakePath: directionAndPath.snakePath}
   }
 
   addToSnakePath() {
     const snakePath = this.state.snakePath
     snakePath.push(this.state.direction)
-    this.setState({
-      snakePath: snakePath,
-    })
   }
 
   removeFromSnakePath() {
     const snakePath = this.state.snakePath
     const tailDirection = snakePath.shift()
-    this.setState({
-      snakePath: snakePath,
-    })
-    return tailDirection
+    return {tailDirection: tailDirection, snakePath: snakePath}
   }
 
   changeSnakeDirection(e) {
