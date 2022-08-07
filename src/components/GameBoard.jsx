@@ -30,7 +30,7 @@ export default class GameBoard extends Component {
       direction: "East",
       snakePath: ["East"],
       head: head,
-      tail: tail,
+      tail: tail
     }
 
     this.changeSnakeDirectionNew = e => {
@@ -189,24 +189,32 @@ export default class GameBoard extends Component {
   changeSnakeDirection(e) {
     switch (e.code) {
       case "ArrowUp":
-        this.setState({
-          direction: "North",
-        })
+        if(this.state.direction !== "South"){
+          this.setState({
+            direction: "North",
+          })
+        }
         break
       case "ArrowRight":
-        this.setState({
-          direction: "East",
-        })
+        if(this.state.direction !== "West"){
+          this.setState({
+            direction: "East",
+          })
+        }
         break
       case "ArrowDown":
-        this.setState({
-          direction: "South",
-        })
+        if(this.state.direction !== "North"){
+          this.setState({
+            direction: "South",
+          })
+        }
         break
       case "ArrowLeft":
-        this.setState({
-          direction: "West",
-        })
+        if(this.state.direction !== "East"){
+          this.setState({
+            direction: "West",
+          })
+        }
         break
       default:
         break

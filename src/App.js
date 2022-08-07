@@ -1,3 +1,4 @@
+import React, { useState } from "react"
 import styled from "styled-components"
 import "./App.css"
 import GameBoard from "./components/GameBoard"
@@ -10,12 +11,18 @@ const AppContainer = styled.div`
 `
 
 function App() {
+
+  const [keyGameBoard, setKeyGameBoard] = useState(0)
+  const restart = () => {
+    debugger;
+    setKeyGameBoard(keyGameBoard + 1)
+  }
   return (
-    <div>
-      <NavBar></NavBar>
-      <AppContainer>
-        <GameBoard size={720}></GameBoard>
-      </AppContainer>
+    <div key={keyGameBoard} >
+        <NavBar event={restart} ></NavBar>
+        <AppContainer>
+          <GameBoard size={720}></GameBoard>
+        </AppContainer>
     </div>
   )
 }
