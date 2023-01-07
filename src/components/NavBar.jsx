@@ -56,18 +56,17 @@ export default function NavBar(props) {
   const [restartEvent] = useState(() => props.event)
 
   const restartButton = (event) => {
-    debugger;
     restartEvent()
   }
 
   return (
     <NavigationBar>
       <Title>
-        The Snake Game
+        Snake Game
       </Title>
       <ScoreBox>
         <Score>
-          Your score: 0
+          Your score: {props.score}
         </Score>
       </ScoreBox>
 

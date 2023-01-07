@@ -1,219 +1,202 @@
-import { Component } from "react"
+import React, { useEffect, useState, useContext } from "react"
 import styled from "styled-components"
+import { ScoreDispatch } from "../App";
 import GridCase from "./GridCase"
 
 const Board = styled.div`
   display: grid;
   grid-template-columns: repeat(40, 2vw);
   border-style: solid;
-  border-color: #ffaaaa;
+  border-color: #b1b1b1;
   width: 80vw;
   border-width: 5px;
 `
+/**
+ * Component that represent the gameboard
+ * @param {*} props 
+ */
+export default function GameBoard(props) {
+  const dispatch = useContext(ScoreDispatch);
+  const [direction, setDirection] = useState("East")
+  const [gameOver, setGameOver] = useState(false)
+  const [numberOfLines] = useState(props.size / 40)
+ 
+  const initialBoard = Array(props.size).fill("E")
+  initialBoard[props.size / 2 + 1] = "S"
+  initialBoard[props.size / 2 ] = "S"
+  initialBoard[Math.floor(Math.random() * (props.size + 1))] = "F"
 
-export default class GameBoard extends Component {
-  constructor(props) {
-    super(props)
-    const board = Array(this.props.size).fill("E")
-    const head = this.props.size / 2 + 1
-    const tail = this.props.size / 2
-    const foodPosition = Math.floor(Math.random() * (this.props.size + 1))
+  /**
+   * A lot of data is stored in the object saved in that useState. 
+   * The reason for this is efficiency; React renders the component 
+   * each time a state variable is modified. Because a lot of 
+   * data is updated each time the snake move, it's more efficient 
+   * to put all that data inside a single state variable object.
+   */
+  const [boardData, setBoardData] = useState({
+    board: initialBoard,
+    foodPosition: Math.floor(Math.random() * (props.size + 1)),
+    snakePath: ["East"],
+    head: props.size / 2 + 1,
+    tail: props.size / 2
+  })
 
-    board[head] = "S"
-    board[tail] = "S"
-    board[foodPosition] = "F"
-
-    this.state = {
-      board: board,
-      foodPosition: foodPosition,
-      gameOver: false,
-      direction: "East",
-      snakePath: ["East"],
-      head: head,
-      tail: tail
-    }
-
-    this.changeSnakeDirectionNew = e => {
-      this.changeSnakeDirection(e)
-    }
+  /**
+   * Add a direction to the snake's path
+   * @param {Array.<string>} oldSnakePath 
+   * @param {string} newDirection 
+   */
+  const addToSnakePath = (oldSnakePath, newDirection) => {
+    oldSnakePath.push(newDirection)
+    return oldSnakePath
   }
 
-  componentDidMount() {
-    this.starGame()
-    document.addEventListener("keydown", this.changeSnakeDirectionNew)
+  /**
+   * Remove a direction from the snake's path
+   * @param {Array.<string>} oldSnakePath 
+   */
+  const removeFromSnakePath = (oldSnakePath) => {
+    const tailDirection = oldSnakePath.shift()
+    return { tailDirection: tailDirection, newSnakePath: oldSnakePath }
   }
 
-  componentWillUnmount() {
-    document.removeEventListener("keydown", this.changeSnakeDirectionNew)
-  }
-
-  starGame() {
-    const loop = () => {
-      if (!this.state.gameOver) {
-        const board = this.state.board.slice()
-        board[this.state.tail] = "E"
-
-        let newHead = this.moveHead()
-        if (board[newHead] === "S") {
-          this.setState({
-            gameOver: true,
-          })
-        } else {
-          newHead = this.generateFood(board, newHead)
-
-          const tailAndPath = this.moveTail()
-
-          board[newHead] = "S"
-
-          this.setState({
-            board: board,
-            head: newHead,
-            tail: tailAndPath.tail,
-            snakePath: tailAndPath.snakePath
-          })
-
-          setTimeout(loop, 25)
-        }
-      }
-    }
-    loop()
-  }
-
-  generateFood(board, newHead) {
-    if (board[newHead] === "F") {
-      board[newHead] = "S"
-      let newFoodPosition
-      do {
-        newFoodPosition = Math.floor(Math.random() * (this.props.size + 1))
-      } while (board[newFoodPosition] === "S")
-      board[newFoodPosition] = "F"
-      this.setState({
-        head: newHead,
-        foodPosition: newFoodPosition,
-      })
-      newHead = this.moveHead()
-    }
-    return newHead
-  }
-
-  moveHead() {
-    const numberOfLines = this.state.board.length / 40
-    let head = this.state.head
-
-    switch (this.state.direction) {
+  /**
+   * Move the snake's head on the gameboard
+   * @param {number} newHead 
+   * @param {number} numberOfLines 
+   * @param {Array.<number>} oldSnakePath 
+   * @param {string} newDirection 
+   */
+  const moveHead = (newHead, numberOfLines, oldSnakePath, newDirection) => {
+    switch (newDirection) {
       case "North":
-        if (head >= 0 && head <= 39) {
-          head = head + 40 * (numberOfLines - 1)
+        if (newHead >= 0 && newHead <= 39) {
+          newHead = newHead + 40 * (numberOfLines - 1)
         } else {
-          head = head - 40
+          newHead = newHead - 40
         }
         break
       case "East":
-        if (head % 40 === 39) {
-          head = head - 39
+        if (newHead % 40 === 39) {
+          newHead = newHead - 39
         } else {
-          head = head + 1
+          newHead = newHead + 1
         }
         break
       case "South":
-        if (head >= 40 * (numberOfLines - 1) && head <= 40 * numberOfLines) {
-          head = head - 40 * (numberOfLines - 1)
+        if (newHead >= 40 * (numberOfLines - 1) && newHead <= 40 * numberOfLines) {
+          newHead = newHead - 40 * (numberOfLines - 1)
         } else {
-          head = head + 40
+          newHead = newHead + 40
         }
         break
       case "West":
-        if (head % 40 === 0) {
-          head = head + 39
+        if (newHead % 40 === 0) {
+          newHead = newHead + 39
         } else {
-          head = head - 1
+          newHead = newHead - 1
         }
         break
       default:
         break
     }
 
-    this.addToSnakePath()
+    const modifiedSnakePath = addToSnakePath(oldSnakePath, newDirection)
 
-    return head
+    return {newHead: newHead, oldSnakePath: modifiedSnakePath}
   }
 
-  moveTail() {
-    const numberOfLines = this.state.board.length / 40
-    let tail = this.state.tail
 
+  /**
+   * Move the snake's tail on the gameboard
+   * @param {number} newTail 
+   * @param {number} numberOfLines 
+   * @param {Array.<string>} oldSnakePath 
+   */
+  const moveTail = (newTail, numberOfLines, oldSnakePath) => {
     const topGridCase =
-      tail >= 0 && tail <= 39 ? tail + 40 * (numberOfLines - 1) : tail - 40
+      newTail >= 0 && newTail <= 39 ? newTail + 40 * (numberOfLines - 1) : newTail - 40
 
     const bottomGridCase =
-      tail >= 40 * numberOfLines - 39 && tail <= 40 * numberOfLines
-        ? tail - 40 * (numberOfLines - 1)
-        : tail + 40
+      newTail >= 40 * numberOfLines - 39 && newTail <= 40 * numberOfLines
+        ? newTail - 40 * (numberOfLines - 1)
+        : newTail + 40
 
-    const rightGridCase = tail % 40 === 39 ? tail - 39 : tail + 1
+    const rightGridCase = newTail % 40 === 39 ? newTail - 39 : newTail + 1
 
-    const leftGridCase = tail % 40 === 0 ? tail + 39 : tail - 1
+    const leftGridCase = newTail % 40 === 0 ? newTail + 39 : newTail - 1
 
-    const directionAndPath = this.removeFromSnakePath()
+    const directionAndPath = removeFromSnakePath(oldSnakePath)
     switch (directionAndPath.tailDirection) {
       case "North":
-        tail = topGridCase
+        newTail = topGridCase
         break
       case "East":
-        tail = rightGridCase
+        newTail = rightGridCase
         break
       case "South":
-        tail = bottomGridCase
+        newTail = bottomGridCase
         break
       case "West":
-        tail = leftGridCase
+        newTail = leftGridCase
         break
       default:
         break
     }
 
-    return {tail: tail, snakePath: directionAndPath.snakePath}
+    return { newTail: newTail, newSnakePath: directionAndPath.newSnakePath }
+  }
+ 
+  /**
+   * Generate a new food piece in a random position on the gameboard
+   * @param {Array.<string>} newBoard 
+   * @param {number} newHead 
+   * @param {number} numberOfLines 
+   * @param {Array.<string>} oldSnakePath 
+   * @param {string} newDirection 
+   */
+  const generateFood = (newBoard, newHead, numberOfLines, oldSnakePath, newDirection) => {
+    let newFoodPosition = 0 
+    let newerHead = newHead
+    if (newBoard[newHead] === "F") {
+      dispatch({type: "increment"})//We dispatch an increment action to update the result on the navbar on the app
+      newBoard[newHead] = "S"
+      do {
+        newFoodPosition = Math.floor(Math.random() * (newBoard.length + 1))
+      } while (newBoard[newFoodPosition] === "S")
+      newBoard[newFoodPosition] = "F"
+      newerHead = moveHead(newHead, numberOfLines, oldSnakePath, newDirection).newHead
+    } 
+    return {newBoard: newBoard, newFoodPosition: newFoodPosition, newerHead: newerHead}
   }
 
-  addToSnakePath() {
-    const snakePath = this.state.snakePath
-    snakePath.push(this.state.direction)
-  }
+  
 
-  removeFromSnakePath() {
-    const snakePath = this.state.snakePath
-    const tailDirection = snakePath.shift()
-    return {tailDirection: tailDirection, snakePath: snakePath}
-  }
-
-  changeSnakeDirection(e) {
+  /**
+   * An event function used to catch a key press (arrow keys)
+   * and then changes the direction of the snake on the gameboard 
+   * @param {KeyboardEvent} e 
+   */
+  const changeSnakeDirection = (e) => {
     switch (e.code) {
       case "ArrowUp":
-        if(this.state.direction !== "South"){
-          this.setState({
-            direction: "North",
-          })
+        if (direction !== "South") {
+          setDirection("North")
         }
         break
       case "ArrowRight":
-        if(this.state.direction !== "West"){
-          this.setState({
-            direction: "East",
-          })
+        if (direction !== "West") {
+          setDirection("East")
         }
         break
       case "ArrowDown":
-        if(this.state.direction !== "North"){
-          this.setState({
-            direction: "South",
-          })
+        if (direction !== "North") {
+          setDirection("South")
         }
         break
       case "ArrowLeft":
-        if(this.state.direction !== "East"){
-          this.setState({
-            direction: "West",
-          })
+        if (direction !== "East") {
+          setDirection("West")
         }
         break
       default:
@@ -221,19 +204,63 @@ export default class GameBoard extends Component {
     }
   }
 
-  render() {
-    return (
-      <Board>
-        {Array.from({ length: this.state.board.length }, (_, i) => {
-          if (this.state.board[i] === "S") {
-            return <GridCase key={i} color="#007519"></GridCase>
-          } else if (this.state.board[i] === "F") {
-            return <GridCase key={i} color="#74ffdc"></GridCase>
-          } else {
-            return <GridCase key={i}></GridCase>
-          }
-        })}
-      </Board>
-    )
-  }
+  /**
+   * Add an event listener to catch the user's keypresses (arrow keys)
+   */
+  useEffect(() => {
+    document.addEventListener("keydown", changeSnakeDirection)
+    return () => {
+      document.removeEventListener("keydown", changeSnakeDirection)
+    }
+  })
+
+  useEffect(() => {
+    /**
+     * This is the game engine, it indefinitely loops the game
+     * (and thus move the snake's body on the gameboard) until
+     * the snake eats itself.
+     */
+    const loop = () => {
+      if (!gameOver) {
+        let {newHead, oldSnakePath} = moveHead(boardData.head, numberOfLines, boardData.snakePath, direction)
+        if (boardData.board[newHead] === "S") {
+          setGameOver(true)
+        } else {
+          boardData.board[boardData.tail] = "E"
+          const {newBoard, newFoodPosition, newerHead} = generateFood(boardData.board, newHead, numberOfLines, boardData.snakePath, direction, oldSnakePath)
+          const {newTail, newSnakePath} = moveTail(boardData.tail, numberOfLines, oldSnakePath)
+          newBoard[newerHead] = "S"
+          setBoardData({
+            board: newBoard,
+            head: newerHead,
+            tail: newTail,
+            foodPosition: newFoodPosition,
+            snakePath: newSnakePath
+          })
+        }
+      }
+    }
+    /**
+     * The number on the setTimout could be used to add difficulty
+     * to the game (for example, an easy mode where the snake moves slower)
+     */
+    const timeout = setTimeout(loop,25) 
+    return function cleanup() {
+      clearTimeout(timeout)
+    }
+  })
+
+  return (
+    <Board>
+      {Array.from({ length: boardData.board.length }, (_, i) => {
+        if (boardData.board[i] === "S") {
+          return <GridCase key={i} color="#7bff95"></GridCase>
+        } else if (boardData.board[i] === "F") {
+          return <GridCase key={i} color="#75bbfd"></GridCase>
+        } else {
+          return <GridCase key={i}></GridCase>
+        }
+      })}
+    </Board>
+  )
 }
